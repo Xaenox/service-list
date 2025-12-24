@@ -1,10 +1,13 @@
 # Community Services Marketplace
 
-A backend API for the Community Services Marketplace - a platform for vas3k.club community members to list and discover services offered by fellow members.
+A full-stack platform for vas3k.club community members to list and discover services offered by fellow members. Includes a Kotlin/Ktor backend API and a modern React frontend.
 
 ## Overview
 
-This is a Kotlin-based microservice built with Ktor framework that provides:
+This project consists of two main components:
+
+### Backend (Kotlin + Ktor)
+A robust REST API built with Ktor framework that provides:
 
 - **User Authentication**: OAuth2 integration with vas3k.club
 - **Service Management**: CRUD operations for community services (online, offline, hybrid)
@@ -12,8 +15,19 @@ This is a Kotlin-based microservice built with Ktor framework that provides:
 - **Role-Based Access Control**: User, Moderator, and Admin roles
 - **Service Discovery**: Search, filtering, and pagination
 
+### Frontend (React + TypeScript)
+A modern, responsive web interface inspired by vas3k.club design:
+
+- **Service Browsing**: Browse and search services with filters
+- **User Interface**: Clean, card-based layout with sidebar navigation
+- **OAuth Integration**: Seamless authentication flow
+- **Responsive Design**: Works on desktop and mobile devices
+
+See [frontend/README.md](frontend/README.md) for detailed frontend documentation.
+
 ## Features
 
+### Backend
 - JWT-based API authentication
 - PostgreSQL database with Exposed ORM
 - RESTful API design
@@ -24,8 +38,16 @@ This is a Kotlin-based microservice built with Ktor framework that provides:
 - Docker support
 - OAuth2 authentication with vas3k.club
 
+### Frontend
+- React 18 with TypeScript
+- Vite for fast development
+- Custom CSS inspired by vas3k.club
+- Client-side routing with React Router
+- API integration with Axios
+
 ## Tech Stack
 
+### Backend
 - **Language**: Kotlin 1.9.22
 - **Framework**: Ktor 2.3.7
 - **Database**: PostgreSQL 16
@@ -33,6 +55,13 @@ This is a Kotlin-based microservice built with Ktor framework that provides:
 - **Authentication**: JWT + OAuth2
 - **DI**: Koin 3.5.3
 - **Build**: Gradle 8.5
+
+### Frontend
+- **Framework**: React 18
+- **Language**: TypeScript 5
+- **Build Tool**: Vite 5
+- **Routing**: React Router 6
+- **HTTP Client**: Axios
 
 ## Quick Start
 
@@ -55,7 +84,7 @@ This is a Kotlin-based microservice built with Ktor framework that provides:
    docker-compose up -d
    ```
 
-4. **Verify it's running**:
+4. **Verify backend is running**:
    ```bash
    curl http://localhost:8080/health
    ```
@@ -68,7 +97,18 @@ This is a Kotlin-based microservice built with Ktor framework that provides:
    }
    ```
 
+5. **Start the frontend** (in a new terminal):
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+   The frontend will be available at `http://localhost:3000`
+
 ### Manual Setup
+
+#### Backend
 
 1. **Prerequisites**:
    - JDK 17+
@@ -87,9 +127,42 @@ This is a Kotlin-based microservice built with Ktor framework that provides:
    java -jar build/libs/community-services-all.jar
    ```
 
+#### Frontend
+
+1. **Prerequisites**:
+   - Node.js 18+
+   - npm or yarn
+
+2. **Install dependencies**:
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+3. **Start development server**:
+   ```bash
+   npm run dev
+   ```
+
+   The frontend will be available at `http://localhost:3000`
+
+4. **Build for production**:
+   ```bash
+   npm run build
+   ```
+
+   See [frontend/README.md](frontend/README.md) for detailed frontend setup and deployment instructions.
+
 ## Documentation
 
-- **[Deployment Guide](DEPLOYMENT.md)** - Comprehensive deployment instructions for various environments
+- **[Frontend README](frontend/README.md)** - Frontend documentation
+  - Setup and installation
+  - Project structure
+  - Development guide
+  - Deployment instructions
+  - API integration
+
+- **[Deployment Guide](DEPLOYMENT.md)** - Backend deployment instructions
   - Docker Compose deployment
   - Manual deployment
   - Production deployment with Nginx
@@ -97,7 +170,7 @@ This is a Kotlin-based microservice built with Ktor framework that provides:
   - Monitoring and maintenance
   - Troubleshooting
 
-- **[Configuration Guide](CONFIGURATION.md)** - Detailed configuration options
+- **[Configuration Guide](CONFIGURATION.md)** - Backend configuration options
   - Environment variables
   - Database configuration
   - OAuth2 setup
