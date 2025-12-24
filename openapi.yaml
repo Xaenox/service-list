@@ -1,0 +1,1243 @@
+openapi: 3.0.3
+info:
+  title: Community Services Marketplace API
+  description: |
+    API for the Community Services Marketplace - a platform where community members can share and discover services.
+
+    ## Authentication
+    This API uses JWT Bearer tokens for authentication. Obtain a token through the OAuth flow:
+    1. Start authentication at `/auth/login`
+    2. Complete OAuth callback at `/auth/callback`
+    3. Use the returned JWT token in the Authorization header: `Bearer <token>`
+
+    ## Roles
+    - **USER**: Regular authenticated user
+    - **MODERATOR**: Can moderate all services
+    - **ADMIN**: Full administrative access
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: https://vas3k.club
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.vas3k.club
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: OAuth authentication and user session management
+  - name: Categories
+    description: Service categories management
+  - name: Services
+    description: Service listings and management
+
+paths:
+  /auth/login:
+    get:
+      tags:
+        - Authentication
+      summary: Start OAuth login flow
+      description: Initiates the OAuth authentication process and redirects to the OAuth provider
+      parameters:
+        - name: return_url
+          in: query
+          description: URL to redirect to after successful authentication
+          required: false
+          schema:
+            type: string
+            format: uri
+      responses:
+        '302':
+          description: Redirect to OAuth provider
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/callback:
+    get:
+      tags:
+        - Authentication
+      summary: OAuth callback endpoint
+      description: Handles the OAuth callback and exchanges the authorization code for a JWT token
+      parameters:
+        - name: code
+          in: query
+          description: Authorization code from OAuth provider
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          description: State parameter for CSRF protection
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '302':
+          description: Redirect to return URL with token
+        '400':
+          description: Bad request (missing code or invalid state)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (inactive membership)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user profile
+      description: Returns the profile information of the authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Unauthorized (not authenticated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /categories:
+    get:
+      tags:
+        - Categories
+      summary: List all categories
+      description: Returns a list of categories, either as a flat list or as a hierarchical tree
+      parameters:
+        - name: flat
+          in: query
+          description: If true, returns a flat list of all categories. If false, returns a hierarchical tree
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryResponse'
+
+    post:
+      tags:
+        - Categories
+      summary: Create a new category
+      description: Creates a new category (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+      responses:
+        '201':
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          description: Bad request (validation error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (admin role required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict (category with this slug already exists)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /categories/{slug}:
+    get:
+      tags:
+        - Categories
+      summary: Get category by slug
+      description: Returns a category and its children by slug
+      parameters:
+        - name: slug
+          in: path
+          description: Category slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Category retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          description: Bad request (invalid slug)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /categories/{id}:
+    put:
+      tags:
+        - Categories
+      summary: Update a category
+      description: Updates an existing category (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Category ID (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryRequest'
+      responses:
+        '200':
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          description: Bad request (invalid ID format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (admin role required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Categories
+      summary: Delete a category
+      description: Deletes a category if it has no subcategories (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Category ID (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Category deleted successfully
+        '400':
+          description: Bad request (invalid ID format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (admin role required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict (category has subcategories)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /services:
+    get:
+      tags:
+        - Services
+      summary: List services with filtering and pagination
+      description: Returns a paginated list of services with optional filtering
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page (max 50)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - name: q
+          in: query
+          description: Search query (searches in title and description)
+          required: false
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: Filter by category slug
+          required: false
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Filter by service type
+          required: false
+          schema:
+            type: string
+            enum: [ONLINE, OFFLINE, HYBRID]
+        - name: city
+          in: query
+          description: Filter by city
+          required: false
+          schema:
+            type: string
+        - name: country
+          in: query
+          description: Filter by country
+          required: false
+          schema:
+            type: string
+        - name: hasBonus
+          in: query
+          description: Filter services with bonuses
+          required: false
+          schema:
+            type: boolean
+        - name: ownerId
+          in: query
+          description: Filter by owner user ID
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Services retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PagedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ServiceListItemResponse'
+
+    post:
+      tags:
+        - Services
+      summary: Create a new service
+      description: Creates a new service listing (authentication required)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateServiceRequest'
+      responses:
+        '201':
+          description: Service created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceResponse'
+        '400':
+          description: Bad request (validation error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /services/{id}:
+    get:
+      tags:
+        - Services
+      summary: Get service by ID
+      description: Returns detailed information about a service
+      parameters:
+        - name: id
+          in: path
+          description: Service ID (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Service retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceResponse'
+        '400':
+          description: Bad request (invalid ID format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Service not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Services
+      summary: Update a service
+      description: Updates an existing service (owner or moderator only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Service ID (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateServiceRequest'
+      responses:
+        '200':
+          description: Service updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceResponse'
+        '400':
+          description: Bad request (invalid ID format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (not the owner or moderator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Service not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Services
+      summary: Delete a service (soft delete)
+      description: Soft deletes a service by marking it as DELETED (owner or moderator only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Service ID (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Service deleted successfully
+        '400':
+          description: Bad request (invalid ID format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (not the owner or moderator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Service not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /services/{id}/hard:
+    delete:
+      tags:
+        - Services
+      summary: Permanently delete a service
+      description: Permanently deletes a service from the database (moderator only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Service ID (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Service permanently deleted
+        '400':
+          description: Bad request (invalid ID format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (moderator role required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Service not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{userId}/services:
+    get:
+      tags:
+        - Services
+      summary: Get services by user ID
+      description: Returns a paginated list of services owned by a specific user
+      parameters:
+        - name: userId
+          in: path
+          description: User ID (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page (max 50)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Services retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PagedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ServiceListItemResponse'
+        '400':
+          description: Bad request (invalid user ID format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /my/services:
+    get:
+      tags:
+        - Services
+      summary: Get current user's services
+      description: Returns a paginated list of services owned by the authenticated user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page (max 50)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Services retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PagedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ServiceListItemResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/callback
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+
+    TokenResponse:
+      type: object
+      required:
+        - token
+        - expiresIn
+      properties:
+        token:
+          type: string
+          description: JWT token for authentication
+        expiresIn:
+          type: integer
+          description: Token expiration time in seconds
+          example: 2592000
+
+    UserResponse:
+      type: object
+      required:
+        - id
+        - slug
+        - fullName
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User unique identifier
+        slug:
+          type: string
+          description: User slug (username)
+        fullName:
+          type: string
+          description: User's full name
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: URL to user's avatar image
+        country:
+          type: string
+          nullable: true
+          description: User's country
+        city:
+          type: string
+          nullable: true
+          description: User's city
+
+    UserProfileResponse:
+      type: object
+      required:
+        - id
+        - slug
+        - email
+        - fullName
+        - role
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User unique identifier
+        slug:
+          type: string
+          description: User slug (username)
+        email:
+          type: string
+          format: email
+          description: User's email address
+        fullName:
+          type: string
+          description: User's full name
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: URL to user's avatar image
+        country:
+          type: string
+          nullable: true
+          description: User's country
+        city:
+          type: string
+          nullable: true
+          description: User's city
+        role:
+          type: string
+          enum: [USER, MODERATOR, ADMIN]
+          description: User role
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+
+    CategoryResponse:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - sortOrder
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Category unique identifier
+        name:
+          type: string
+          description: Category name
+        slug:
+          type: string
+          description: Category URL-friendly slug
+        description:
+          type: string
+          nullable: true
+          description: Category description
+        icon:
+          type: string
+          nullable: true
+          description: Category icon identifier
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Parent category ID (null for root categories)
+        sortOrder:
+          type: integer
+          description: Sort order for displaying categories
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryResponse'
+          description: Child categories
+
+    CreateCategoryRequest:
+      type: object
+      required:
+        - name
+        - slug
+      properties:
+        name:
+          type: string
+          description: Category name
+          minLength: 1
+        slug:
+          type: string
+          description: Category URL-friendly slug (lowercase letters, numbers, and hyphens only)
+          pattern: '^[a-z0-9-]+$'
+          minLength: 1
+        description:
+          type: string
+          nullable: true
+          description: Category description
+        icon:
+          type: string
+          nullable: true
+          description: Category icon identifier
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Parent category ID
+        sortOrder:
+          type: integer
+          default: 0
+          description: Sort order for displaying categories
+
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          description: Category name
+        description:
+          type: string
+          nullable: true
+          description: Category description
+        icon:
+          type: string
+          nullable: true
+          description: Category icon identifier
+        sortOrder:
+          type: integer
+          nullable: true
+          description: Sort order for displaying categories
+
+    Contacts:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: Contact email address
+        phone:
+          type: string
+          nullable: true
+          description: Contact phone number
+        telegram:
+          type: string
+          nullable: true
+          description: Telegram username
+        whatsapp:
+          type: string
+          nullable: true
+          description: WhatsApp number
+        website:
+          type: string
+          format: uri
+          nullable: true
+          description: Website URL
+
+    Location:
+      type: object
+      properties:
+        country:
+          type: string
+          nullable: true
+          description: Country name
+        city:
+          type: string
+          nullable: true
+          description: City name
+        address:
+          type: string
+          nullable: true
+          description: Street address
+        latitude:
+          type: number
+          format: double
+          nullable: true
+          description: Geographic latitude
+        longitude:
+          type: number
+          format: double
+          nullable: true
+          description: Geographic longitude
+
+    Bonus:
+      type: object
+      required:
+        - type
+        - description
+      properties:
+        type:
+          type: string
+          enum: [DISCOUNT_PERCENT, DISCOUNT_FIXED, FREE_TRIAL, GIFT, CUSTOM]
+          description: Type of bonus offered
+        value:
+          type: string
+          nullable: true
+          description: Bonus value (e.g., "10" for 10% discount, "50" for $50 off)
+        description:
+          type: string
+          description: Human-readable bonus description
+
+    ServiceResponse:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - type
+        - status
+        - contacts
+        - tags
+        - owner
+        - categories
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Service unique identifier
+        title:
+          type: string
+          description: Service title
+        description:
+          type: string
+          description: Service description
+        type:
+          type: string
+          enum: [ONLINE, OFFLINE, HYBRID]
+          description: Service type
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, DELETED]
+          description: Service status
+        contacts:
+          $ref: '#/components/schemas/Contacts'
+        location:
+          allOf:
+            - $ref: '#/components/schemas/Location'
+            - nullable: true
+        bonus:
+          allOf:
+            - $ref: '#/components/schemas/Bonus'
+            - nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          description: Service tags
+        owner:
+          $ref: '#/components/schemas/UserResponse'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryResponse'
+          description: Associated categories
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    ServiceListItemResponse:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - type
+        - owner
+        - categories
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Service unique identifier
+        title:
+          type: string
+          description: Service title
+        description:
+          type: string
+          description: Service description (truncated to 200 characters)
+        type:
+          type: string
+          enum: [ONLINE, OFFLINE, HYBRID]
+          description: Service type
+        location:
+          allOf:
+            - $ref: '#/components/schemas/Location'
+            - nullable: true
+        bonus:
+          allOf:
+            - $ref: '#/components/schemas/Bonus'
+            - nullable: true
+        owner:
+          $ref: '#/components/schemas/UserResponse'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryResponse'
+          description: Associated categories
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+
+    CreateServiceRequest:
+      type: object
+      required:
+        - title
+        - description
+        - type
+        - contacts
+      properties:
+        title:
+          type: string
+          description: Service title
+          minLength: 1
+        description:
+          type: string
+          description: Service description
+          minLength: 1
+        type:
+          type: string
+          enum: [ONLINE, OFFLINE, HYBRID]
+          description: Service type
+        contacts:
+          $ref: '#/components/schemas/Contacts'
+        location:
+          allOf:
+            - $ref: '#/components/schemas/Location'
+            - nullable: true
+        bonus:
+          allOf:
+            - $ref: '#/components/schemas/Bonus'
+            - nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          default: []
+          description: Service tags
+        categoryIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          default: []
+          description: Category IDs to associate with the service
+
+    UpdateServiceRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          nullable: true
+          description: Service title
+        description:
+          type: string
+          nullable: true
+          description: Service description
+        type:
+          type: string
+          enum: [ONLINE, OFFLINE, HYBRID]
+          nullable: true
+          description: Service type
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, DELETED]
+          nullable: true
+          description: Service status (moderators only)
+        contacts:
+          allOf:
+            - $ref: '#/components/schemas/Contacts'
+            - nullable: true
+        location:
+          allOf:
+            - $ref: '#/components/schemas/Location'
+            - nullable: true
+        bonus:
+          allOf:
+            - $ref: '#/components/schemas/Bonus'
+            - nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Service tags
+        categoryIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+          description: Category IDs to associate with the service
+
+    PagedResponse:
+      type: object
+      required:
+        - items
+        - page
+        - pageSize
+        - totalItems
+        - totalPages
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+          description: Array of items in the current page
+        page:
+          type: integer
+          description: Current page number
+        pageSize:
+          type: integer
+          description: Number of items per page
+        totalItems:
+          type: integer
+          format: int64
+          description: Total number of items across all pages
+        totalPages:
+          type: integer
+          description: Total number of pages
