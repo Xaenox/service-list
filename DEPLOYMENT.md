@@ -1,25 +1,39 @@
 # Deployment Guide
 
-This guide provides step-by-step instructions for deploying the Community Services Marketplace API server.
+This guide provides step-by-step instructions for deploying the Community Services Marketplace, including both the API backend and React frontend.
 
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
 - [Quick Start with Docker Compose](#quick-start-with-docker-compose)
-- [Manual Deployment](#manual-deployment)
-- [Production Deployment](#production-deployment)
+- [Backend Deployment](#backend-deployment)
+  - [Manual Backend Deployment](#manual-backend-deployment)
+  - [Backend Production Setup](#backend-production-setup)
+- [Frontend Deployment](#frontend-deployment)
+  - [Development Setup](#development-setup)
+  - [Production Build](#production-build)
+  - [Static Hosting Deployment](#static-hosting-deployment)
+  - [Docker Deployment](#docker-deployment)
+  - [Nginx Deployment](#nginx-deployment)
+- [Full-Stack Deployment](#full-stack-deployment)
 - [Cloud Platform Deployment](#cloud-platform-deployment)
 - [Monitoring and Maintenance](#monitoring-and-maintenance)
 - [Troubleshooting](#troubleshooting)
 
 ## Prerequisites
 
-### Required Software
+### Backend Requirements
 
 - **Docker** 20.10+ and **Docker Compose** 2.0+ (for containerized deployment)
 - **PostgreSQL** 16+ (if deploying without Docker)
 - **JDK** 17+ (for manual builds)
 - **Gradle** 8.5+ (for manual builds)
+
+### Frontend Requirements
+
+- **Node.js** 18+ and **npm** 9+ (or **yarn**)
+- **Nginx** or similar web server (for production static hosting)
+- **Docker** (optional, for containerized frontend deployment)
 
 ### Required External Services
 
@@ -122,7 +136,9 @@ To also remove the database volume:
 docker-compose down -v
 ```
 
-## Manual Deployment
+## Backend Deployment
+
+### Manual Backend Deployment
 
 For deployments without Docker or for development purposes.
 
@@ -242,9 +258,9 @@ sudo systemctl start community-services
 sudo systemctl status community-services
 ```
 
-## Production Deployment
+### Backend Production Setup
 
-### Security Checklist
+#### Security Checklist
 
 - [ ] Use strong, randomly generated `JWT_SECRET` (32+ characters)
 - [ ] Use secure database passwords
@@ -256,9 +272,9 @@ sudo systemctl status community-services
 - [ ] Enable database backups
 - [ ] Configure proper log retention and rotation
 
-### Reverse Proxy Setup (Nginx)
+#### Reverse Proxy Setup (Nginx)
 
-It's recommended to run the application behind a reverse proxy for TLS termination and additional security.
+It's recommended to run the backend application behind a reverse proxy for TLS termination and additional security.
 
 Create `/etc/nginx/sites-available/community-services`:
 
@@ -321,9 +337,9 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-### Database Configuration
+#### Database Configuration
 
-#### Connection Pooling
+##### Connection Pooling
 
 For production, tune the HikariCP connection pool in `application.yaml`:
 
@@ -336,7 +352,7 @@ database:
   maxLifetime: 1800000
 ```
 
-#### Backups
+##### Backups
 
 Set up automated PostgreSQL backups:
 
@@ -375,7 +391,7 @@ Add daily backup at 2 AM:
 0 2 * * * /opt/scripts/backup-db.sh >> /var/log/postgres-backup.log 2>&1
 ```
 
-### Environment Variables in Production
+#### Environment Variables in Production
 
 Never store secrets in configuration files. Use environment variables or secret management:
 
@@ -414,6 +430,573 @@ secrets:
 ```
 
 **Option 3: Cloud provider secrets** (AWS Secrets Manager, Google Secret Manager, etc.)
+
+## Frontend Deployment
+
+The frontend is a React + TypeScript application built with Vite. It can be deployed in multiple ways depending on your infrastructure.
+
+### Development Setup
+
+For local development with the backend running:
+
+#### 1. Install Dependencies
+
+```bash
+cd frontend
+npm install
+```
+
+#### 2. Configure API Connection
+
+The development server is pre-configured to proxy API requests to `http://localhost:8080`.
+
+Check `frontend/vite.config.ts`:
+
+```typescript
+export default defineConfig({
+  server: {
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      }
+    }
+  }
+})
+```
+
+#### 3. Start Development Server
+
+```bash
+npm run dev
+```
+
+The frontend will be available at `http://localhost:3000`.
+
+**Development Features:**
+- Hot module replacement (HMR)
+- TypeScript type checking
+- ESLint integration
+- Automatic API proxying to backend
+
+### Production Build
+
+Build the frontend for production deployment:
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Build for production
+npm run build
+```
+
+This creates an optimized production build in `frontend/dist/` with:
+- Minified JavaScript and CSS
+- Tree-shaken dependencies
+- Optimized assets
+- Source maps (optional)
+
+**Build output:**
+```
+frontend/dist/
+├── index.html
+├── assets/
+│   ├── index-[hash].js
+│   ├── index-[hash].css
+│   └── [other assets]
+└── vite.svg
+```
+
+### Static Hosting Deployment
+
+The built frontend is a static Single Page Application (SPA) that can be deployed to any static hosting service.
+
+#### Netlify Deployment
+
+1. **Build the frontend:**
+   ```bash
+   cd frontend
+   npm run build
+   ```
+
+2. **Deploy to Netlify:**
+   ```bash
+   # Install Netlify CLI
+   npm install -g netlify-cli
+
+   # Deploy
+   netlify deploy --prod --dir=dist
+   ```
+
+3. **Configure rewrites** for SPA routing.
+
+   Create `frontend/dist/_redirects`:
+   ```
+   /*    /index.html   200
+   ```
+
+4. **Set environment variables** in Netlify dashboard:
+   - No build-time env vars needed (API URL is relative)
+   - Configure custom domain and HTTPS
+
+**Netlify configuration file** (`netlify.toml`):
+```toml
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+```
+
+#### Vercel Deployment
+
+1. **Install Vercel CLI:**
+   ```bash
+   npm install -g vercel
+   ```
+
+2. **Deploy:**
+   ```bash
+   cd frontend
+   vercel --prod
+   ```
+
+3. **Configure rewrites** in `vercel.json`:
+   ```json
+   {
+     "rewrites": [
+       { "source": "/(.*)", "destination": "/index.html" }
+     ]
+   }
+   ```
+
+#### GitHub Pages Deployment
+
+1. **Add base path** in `vite.config.ts`:
+   ```typescript
+   export default defineConfig({
+     base: '/repository-name/',
+     // ...
+   })
+   ```
+
+2. **Build and deploy:**
+   ```bash
+   npm run build
+
+   # Install gh-pages
+   npm install -g gh-pages
+
+   # Deploy to gh-pages branch
+   gh-pages -d dist
+   ```
+
+#### AWS S3 + CloudFront
+
+1. **Build the frontend:**
+   ```bash
+   npm run build
+   ```
+
+2. **Create S3 bucket and enable static website hosting**
+
+3. **Upload build files:**
+   ```bash
+   aws s3 sync frontend/dist/ s3://your-bucket-name/ --delete
+   ```
+
+4. **Configure CloudFront distribution:**
+   - Origin: S3 bucket
+   - Default root object: `index.html`
+   - Error pages: Redirect 403/404 to `/index.html` (for SPA routing)
+
+5. **Set up custom domain and SSL certificate**
+
+### Docker Deployment
+
+Deploy the frontend as a containerized application with Nginx.
+
+#### Create Dockerfile
+
+Create `frontend/Dockerfile`:
+
+```dockerfile
+# Build stage
+FROM node:18-alpine AS build
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Production stage
+FROM nginx:alpine
+
+# Copy built files from build stage
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+#### Create Nginx Configuration
+
+Create `frontend/nginx.conf`:
+
+```nginx
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+    gzip_min_length 1000;
+
+    # SPA routing - redirect all requests to index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Cache static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Proxy API requests to backend
+    location /api/ {
+        proxy_pass http://backend:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+#### Build and Run Docker Image
+
+```bash
+# Build the image
+cd frontend
+docker build -t community-services-frontend:latest .
+
+# Run the container
+docker run -d \
+  --name frontend \
+  -p 3000:80 \
+  community-services-frontend:latest
+
+# View logs
+docker logs -f frontend
+```
+
+### Nginx Deployment
+
+Deploy the frontend on a server with Nginx (without Docker).
+
+#### 1. Build the Frontend
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+#### 2. Copy Files to Server
+
+```bash
+# Copy built files to server
+scp -r dist/* user@your-server:/var/www/community-services/
+```
+
+#### 3. Configure Nginx
+
+Create `/etc/nginx/sites-available/community-services-frontend`:
+
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+
+    root /var/www/community-services;
+    index index.html;
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    # SPA routing
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Cache static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Proxy API requests to backend
+    location /api/ {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+}
+```
+
+#### 4. Enable Site and Reload Nginx
+
+```bash
+# Create symbolic link
+sudo ln -s /etc/nginx/sites-available/community-services-frontend /etc/nginx/sites-enabled/
+
+# Test configuration
+sudo nginx -t
+
+# Reload Nginx
+sudo systemctl reload nginx
+```
+
+#### 5. Configure HTTPS with Let's Encrypt
+
+```bash
+# Install Certbot
+sudo apt-get install certbot python3-certbot-nginx
+
+# Obtain certificate
+sudo certbot --nginx -d yourdomain.com
+
+# Auto-renewal is set up automatically
+```
+
+### Frontend Environment Configuration
+
+The frontend uses relative API URLs (`/api/v1`) which are proxied to the backend.
+
+#### Development Configuration
+
+In `frontend/vite.config.ts`:
+
+```typescript
+export default defineConfig({
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',  // Backend URL
+        changeOrigin: true,
+      }
+    }
+  }
+})
+```
+
+#### Production Configuration
+
+For production, configure the proxy in your web server (Nginx/Apache) or update the API base URL in `frontend/src/services/api.ts`:
+
+```typescript
+const api = axios.create({
+  baseURL: process.env.VITE_API_URL || '/api/v1',
+  // ...
+});
+```
+
+Set `VITE_API_URL` during build:
+
+```bash
+VITE_API_URL=https://api.yourdomain.com/api/v1 npm run build
+```
+
+Or create a `.env.production` file in `frontend/`:
+
+```env
+VITE_API_URL=https://api.yourdomain.com/api/v1
+```
+
+**Note:** Vite only exposes env vars prefixed with `VITE_` to the client.
+
+## Full-Stack Deployment
+
+Deploy both frontend and backend together using Docker Compose.
+
+### Docker Compose Configuration
+
+Create or update `docker-compose.yml` in the project root:
+
+```yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: community_services
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/community_services
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      VAS3K_CLIENT_ID: ${VAS3K_CLIENT_ID}
+      VAS3K_CLIENT_SECRET: ${VAS3K_CLIENT_SECRET}
+      OAUTH_REDIRECT_URL: ${OAUTH_REDIRECT_URL}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    environment:
+      - BACKEND_URL=http://backend:8080
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  postgres_data:
+```
+
+### Deploy the Full Stack
+
+```bash
+# 1. Configure environment variables
+cp .env.example .env
+# Edit .env with your values
+
+# 2. Start all services
+docker-compose up -d
+
+# 3. View logs
+docker-compose logs -f
+
+# 4. Check health status
+docker-compose ps
+
+# 5. Stop services
+docker-compose down
+
+# 6. Stop and remove volumes
+docker-compose down -v
+```
+
+### Production Full-Stack Deployment
+
+For production with HTTPS and domain:
+
+1. **Set up reverse proxy (Nginx)** on the host machine
+2. **Configure SSL/TLS** with Let's Encrypt
+3. **Update OAuth redirect URLs** to use your domain
+4. **Configure CORS** in backend to allow your domain
+5. **Use production environment variables**
+
+Example production Nginx config:
+
+```nginx
+upstream frontend {
+    server localhost:80;
+}
+
+upstream backend {
+    server localhost:8080;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name yourdomain.com;
+
+    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+    # Frontend
+    location / {
+        proxy_pass http://frontend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Backend API
+    location /api/ {
+        proxy_pass http://backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
 
 ## Cloud Platform Deployment
 
@@ -711,14 +1294,40 @@ sudo journalctl -u community-services -n 100
    - Check database query performance
    - Consider adding caching layer (Redis)
 
+### Frontend Issues
+
+1. **Build fails:**
+   - Check Node.js version (18+ required)
+   - Clear node_modules and reinstall: `rm -rf node_modules package-lock.json && npm install`
+   - Check for TypeScript errors: `npm run build`
+
+2. **API requests fail (404, CORS errors):**
+   - Verify backend is running on port 8080
+   - Check Vite proxy configuration in `vite.config.ts`
+   - In production, ensure Nginx is proxying `/api/` to backend
+   - Check CORS configuration in backend allows your frontend domain
+
+3. **Blank page in production:**
+   - Check browser console for errors
+   - Verify all assets loaded (check Network tab)
+   - Ensure SPA routing is configured (try_files in Nginx)
+   - Check base path in `vite.config.ts` matches deployment path
+
+4. **Authentication not working:**
+   - Check OAuth redirect URL includes your frontend domain
+   - Verify JWT token is stored in localStorage
+   - Check browser console for auth errors
+   - Ensure backend allows CORS from your frontend domain
+
 ### Getting Help
 
-1. Check application logs first
+1. Check application logs first (backend and frontend)
 2. Verify all environment variables are set correctly
 3. Test database connectivity independently
-4. Review the [Configuration Guide](CONFIGURATION.md)
-5. Check GitHub issues for similar problems
-6. Create a new issue with logs and environment details
+4. Check browser console for frontend errors
+5. Review the [Configuration Guide](CONFIGURATION.md)
+6. Check GitHub issues for similar problems
+7. Create a new issue with logs and environment details
 
 ## Next Steps
 
