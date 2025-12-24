@@ -1,5 +1,6 @@
 package club.vas3k.services.domain
 
+import io.ktor.server.auth.*
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import java.util.UUID
@@ -16,7 +17,7 @@ data class User(
     val isActive: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant
-)
+) : Principal
 
 @Serializable
 data class UserResponse(
