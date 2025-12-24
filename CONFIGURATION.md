@@ -1,23 +1,32 @@
 # Configuration Guide
 
-This guide provides detailed information about all configuration options for the Community Services Marketplace API.
+This guide provides detailed information about all configuration options for the Community Services Marketplace, including both backend API and frontend application.
 
 ## Table of Contents
 
-- [Configuration Files](#configuration-files)
-- [Environment Variables](#environment-variables)
-- [Application Configuration](#application-configuration)
-- [Database Configuration](#database-configuration)
-- [OAuth2 Configuration](#oauth2-configuration)
-- [JWT Configuration](#jwt-configuration)
-- [Server Configuration](#server-configuration)
-- [Logging Configuration](#logging-configuration)
-- [CORS Configuration](#cors-configuration)
+- [Backend Configuration](#backend-configuration)
+  - [Configuration Files](#configuration-files)
+  - [Environment Variables](#environment-variables)
+  - [Application Configuration](#application-configuration)
+  - [Database Configuration](#database-configuration)
+  - [OAuth2 Configuration](#oauth2-configuration)
+  - [JWT Configuration](#jwt-configuration)
+  - [Server Configuration](#server-configuration)
+  - [Logging Configuration](#logging-configuration)
+  - [CORS Configuration](#cors-configuration)
+- [Frontend Configuration](#frontend-configuration)
+  - [Environment Variables](#frontend-environment-variables)
+  - [Vite Configuration](#vite-configuration)
+  - [API URL Configuration](#api-url-configuration)
+  - [Build Configuration](#build-configuration)
+  - [Runtime Configuration](#runtime-configuration)
 - [Security Best Practices](#security-best-practices)
 
-## Configuration Files
+## Backend Configuration
 
-The application uses multiple configuration sources with the following priority (highest to lowest):
+### Configuration Files
+
+The backend application uses multiple configuration sources with the following priority (highest to lowest):
 
 1. **Environment variables** (highest priority)
 2. **application.yaml** (default configuration)
@@ -40,9 +49,9 @@ cp .env.example .env
 
 This file is loaded by Docker Compose and should contain all sensitive configuration values.
 
-## Environment Variables
+### Environment Variables
 
-### Required Environment Variables
+#### Required Environment Variables
 
 These variables **must** be set for the application to run:
 
@@ -56,7 +65,7 @@ These variables **must** be set for the application to run:
 | `OAUTH_REDIRECT_URL` | OAuth2 callback URL | `http://localhost:8080/api/v1/auth/callback` |
 | `JWT_SECRET` | Secret key for signing JWT tokens (min 32 chars) | `your-super-secret-jwt-key-change-in-production` |
 
-### Optional Environment Variables
+#### Optional Environment Variables
 
 These variables have defaults but can be overridden:
 
@@ -70,7 +79,7 @@ These variables have defaults but can be overridden:
 | `JWT_EXPIRATION_DAYS` | JWT token validity period | `30` |
 | `LOG_LEVEL` | Application log level | `INFO` |
 
-### Setting Environment Variables
+#### Setting Environment Variables
 
 **Linux/macOS:**
 ```bash
@@ -97,9 +106,9 @@ Environment="DATABASE_URL=jdbc:postgresql://localhost:5432/community_services"
 Environment="DATABASE_PASSWORD=secure_password"
 ```
 
-## Application Configuration
+### Application Configuration
 
-### application.yaml Structure
+#### application.yaml Structure
 
 ```yaml
 ktor:
@@ -134,7 +143,7 @@ jwt:
   expirationDays: ${JWT_EXPIRATION_DAYS:-30}
 ```
 
-### Modifying application.yaml
+#### Modifying application.yaml
 
 To customize configuration without environment variables, edit `src/main/resources/application.yaml`:
 
@@ -150,9 +159,9 @@ After changes, rebuild the application:
 ./gradlew build
 ```
 
-## Database Configuration
+### Database Configuration
 
-### Connection Settings
+#### Connection Settings
 
 The application uses HikariCP for database connection pooling.
 
@@ -167,7 +176,7 @@ database:
   maxPoolSize: 10
 ```
 
-### Advanced Connection Pool Settings
+#### Advanced Connection Pool Settings
 
 For production environments, you may want to tune the connection pool:
 
@@ -197,7 +206,7 @@ database:
 | `idleTimeout` | Max idle time before close (ms) | 600000 | 600000 |
 | `maxLifetime` | Max connection lifetime (ms) | 1800000 | 1800000 |
 
-### Connection String Options
+#### Connection String Options
 
 PostgreSQL JDBC supports additional connection parameters:
 
@@ -221,7 +230,7 @@ jdbc:postgresql://localhost:5432/community_services?ApplicationName=CommunitySer
 jdbc:postgresql://localhost:5432/community_services?currentSchema=public
 ```
 
-### Database Schema Management
+#### Database Schema Management
 
 The application uses Exposed ORM with automatic schema creation:
 
@@ -243,7 +252,7 @@ This will:
 - **NOT** modify or delete existing columns
 - **NOT** drop tables
 
-### Manual Schema Management
+#### Manual Schema Management
 
 To manually manage schema:
 
@@ -261,7 +270,7 @@ CREATE INDEX IF NOT EXISTS idx_services_owner ON services(owner_id);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP;
 ```
 
-### Database Backup and Restore
+#### Database Backup and Restore
 
 **Backup:**
 ```bash
@@ -287,11 +296,11 @@ gunzip < backup.sql.gz | psql -U postgres -d community_services
 pg_restore -U postgres -d community_services backup.dump
 ```
 
-## OAuth2 Configuration
+### OAuth2 Configuration
 
-The application integrates with vas3k.club for authentication using OAuth2.
+The backend application integrates with vas3k.club for authentication using OAuth2.
 
-### OAuth2 Settings
+#### OAuth2 Settings
 
 ```yaml
 oauth:
@@ -304,7 +313,7 @@ oauth:
     redirectUrl: ${OAUTH_REDIRECT_URL}
 ```
 
-### Obtaining OAuth2 Credentials
+#### Obtaining OAuth2 Credentials
 
 1. Register your application at vas3k.club
 2. Configure authorized redirect URIs:
@@ -313,7 +322,7 @@ oauth:
 3. Obtain Client ID and Client Secret
 4. Set environment variables
 
-### OAuth2 Flow
+#### OAuth2 Flow
 
 The authentication flow:
 
@@ -329,7 +338,7 @@ The authentication flow:
 9. Server → Redirect to return_url with JWT token
 ```
 
-### User Validation
+#### User Validation
 
 The application validates users from vas3k.club:
 
@@ -353,7 +362,7 @@ To promote a user to admin:
 UPDATE users SET role = 'ADMIN' WHERE slug = 'username';
 ```
 
-### Customizing OAuth2 Endpoints
+#### Customizing OAuth2 Endpoints
 
 If vas3k.club endpoints change, update `application.yaml`:
 
@@ -365,11 +374,11 @@ oauth:
     userInfoUrl: https://new-domain.com/api/user
 ```
 
-## JWT Configuration
+### JWT Configuration
 
 JSON Web Tokens (JWT) are used for API authentication after OAuth2 login.
 
-### JWT Settings
+#### JWT Settings
 
 ```yaml
 jwt:
@@ -380,7 +389,7 @@ jwt:
   expirationDays: 30
 ```
 
-### JWT Secret Generation
+#### JWT Secret Generation
 
 The JWT secret should be:
 - At least 32 characters long
@@ -401,7 +410,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"
 node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
 ```
 
-### JWT Token Structure
+#### JWT Token Structure
 
 Generated tokens include these claims:
 
@@ -417,7 +426,7 @@ Generated tokens include these claims:
 }
 ```
 
-### Token Expiration
+#### Token Expiration
 
 Default: 30 days
 
@@ -433,7 +442,7 @@ Or via environment variable:
 export JWT_EXPIRATION_DAYS=7
 ```
 
-### Authentication Strategies
+#### Authentication Strategies
 
 The application uses multiple authentication strategies:
 
@@ -444,7 +453,7 @@ The application uses multiple authentication strategies:
 | `jwt-admin` | Requires ADMIN role only | Category management |
 | `jwt-optional` | Optional authentication | Public service listing |
 
-### Using JWT Tokens
+#### Using JWT Tokens
 
 **Obtaining a token:**
 ```bash
@@ -460,7 +469,7 @@ curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   http://localhost:8080/api/v1/auth/me
 ```
 
-### Token Validation
+#### Token Validation
 
 Tokens are validated for:
 - Valid signature (using JWT_SECRET)
@@ -468,9 +477,9 @@ Tokens are validated for:
 - Not expired
 - User exists in database
 
-## Server Configuration
+### Server Configuration
 
-### HTTP Server Settings
+#### HTTP Server Settings
 
 ```yaml
 ktor:
@@ -479,7 +488,7 @@ ktor:
     host: 0.0.0.0     # Bind address (0.0.0.0 = all interfaces)
 ```
 
-### Port Configuration
+#### Port Configuration
 
 **Change port via environment variable:**
 ```bash
@@ -493,7 +502,7 @@ ktor:
     port: 9090
 ```
 
-### Host Configuration
+#### Host Configuration
 
 **Listen only on localhost:**
 ```yaml
@@ -509,7 +518,7 @@ ktor:
     host: 0.0.0.0
 ```
 
-### JVM Configuration
+#### JVM Configuration
 
 JVM settings are configured in `gradle.properties`:
 
@@ -527,9 +536,9 @@ java -Xmx4096m \           # Maximum heap size
      -jar community-services-all.jar
 ```
 
-## Logging Configuration
+### Logging Configuration
 
-### Log Levels
+#### Log Levels
 
 Logging is configured via Logback. Default configuration in `src/main/resources/logback.xml`.
 
@@ -540,7 +549,7 @@ Logging is configured via Logback. Default configuration in `src/main/resources/
 - `WARN` - Warning messages
 - `ERROR` - Error messages only
 
-### Configuring Log Level
+#### Configuring Log Level
 
 **Via environment variable:**
 ```bash
@@ -567,7 +576,7 @@ export LOG_LEVEL=DEBUG
 </configuration>
 ```
 
-### Request Logging
+#### Request Logging
 
 The application logs all HTTP requests:
 
@@ -586,7 +595,7 @@ install(CallLogging) {
 }
 ```
 
-### Database Query Logging
+#### Database Query Logging
 
 Exposed ORM can log SQL queries:
 
@@ -602,11 +611,11 @@ SQL: SELECT users.id, users.slug, ... FROM users WHERE users.id = ?
 
 **For production**, set to `INFO` to reduce log volume.
 
-## CORS Configuration
+### CORS Configuration
 
 Cross-Origin Resource Sharing (CORS) is configured to allow frontend applications to access the API.
 
-### Current CORS Settings
+#### Current CORS Settings
 
 Location: `src/main/kotlin/club/vas3k/services/plugins/HTTP.kt`
 
@@ -625,7 +634,7 @@ install(CORS) {
 }
 ```
 
-### Production CORS Configuration
+#### Production CORS Configuration
 
 **Security Warning:** `anyHost()` allows all origins and should **NOT** be used in production.
 
@@ -655,7 +664,7 @@ install(CORS) {
 }
 ```
 
-### Custom Headers
+#### Custom Headers
 
 To allow additional headers:
 
@@ -664,13 +673,432 @@ allowHeader("X-Custom-Header")
 allowHeader("X-Request-ID")
 ```
 
-### Preflight Request Caching
+#### Preflight Request Caching
 
 Configure max age for preflight requests:
 
 ```kotlin
 maxAgeInSeconds = 3600 // Cache for 1 hour
 ```
+
+## Frontend Configuration
+
+The frontend is a React + TypeScript application built with Vite. Configuration is handled through environment variables and configuration files.
+
+### Frontend Environment Variables
+
+Vite uses environment variables prefixed with `VITE_` to expose values to the client-side code.
+
+#### Available Environment Variables
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `VITE_API_URL` | Backend API base URL | `/api/v1` | No |
+| `NODE_ENV` | Build environment | `development` | No |
+
+#### Setting Environment Variables
+
+**Development (.env.development):**
+
+Create `frontend/.env.development`:
+
+```env
+# API URL for development (uses proxy)
+VITE_API_URL=/api/v1
+
+# Other development-specific settings
+NODE_ENV=development
+```
+
+**Production (.env.production):**
+
+Create `frontend/.env.production`:
+
+```env
+# API URL for production
+VITE_API_URL=https://api.yourdomain.com/api/v1
+
+# Or use relative URL if frontend and backend are on same domain
+VITE_API_URL=/api/v1
+
+NODE_ENV=production
+```
+
+**Build-time variables:**
+
+Set environment variables during build:
+
+```bash
+# Set API URL during build
+VITE_API_URL=https://api.example.com/api/v1 npm run build
+
+# Multiple variables
+VITE_API_URL=https://api.example.com/api/v1 NODE_ENV=production npm run build
+```
+
+**Important Notes:**
+- Only variables prefixed with `VITE_` are exposed to client code
+- Environment variables are embedded at build time, not runtime
+- Never put secrets in `VITE_` variables (they're visible in the browser)
+- Use different `.env` files for different environments
+
+### Vite Configuration
+
+Main configuration file: `frontend/vite.config.ts`
+
+#### Development Server Configuration
+
+```typescript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+
+  // Development server settings
+  server: {
+    port: 3000,              // Dev server port
+    host: 'localhost',       // Bind address
+    open: true,              // Auto-open browser
+
+    // API proxy configuration
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',  // Backend URL
+        changeOrigin: true,
+        secure: false,
+        // rewrite: (path) => path.replace(/^\/api/, ''),  // Optional path rewrite
+      }
+    },
+
+    // CORS settings for dev server
+    cors: true,
+  },
+
+  // Build settings
+  build: {
+    outDir: 'dist',          // Output directory
+    sourcemap: false,        // Enable for debugging
+    minify: 'terser',        // or 'esbuild'
+    target: 'es2015',        // Browser compatibility
+
+    // Chunk splitting for better caching
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          api: ['axios'],
+        },
+      },
+    },
+  },
+})
+```
+
+#### Production Build Configuration
+
+```typescript
+export default defineConfig({
+  // Production-specific settings
+  base: '/',  // Base public path (change for subdirectory deployment)
+
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,        // Disable sourcemaps in production
+    minify: 'terser',
+
+    // Advanced optimization
+    terserOptions: {
+      compress: {
+        drop_console: true,  // Remove console.log in production
+        drop_debugger: true,
+      },
+    },
+
+    // Size warnings
+    chunkSizeWarningLimit: 1000,  // KB
+  },
+})
+```
+
+### API URL Configuration
+
+The frontend communicates with the backend API. Configure the API URL based on deployment:
+
+#### Development Setup
+
+In `frontend/src/services/api.ts`:
+
+```typescript
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 10000,  // 10 seconds
+});
+```
+
+With Vite proxy in development:
+- Frontend: `http://localhost:3000`
+- API requests to `/api/v1/*` → proxied to `http://localhost:8080/api/v1/*`
+- No CORS issues
+
+#### Production Setup
+
+**Option 1: Same Domain Deployment (Recommended)**
+
+Deploy frontend and backend on the same domain using Nginx:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name yourdomain.com;
+
+    # Frontend
+    location / {
+        root /var/www/frontend/dist;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Backend API
+    location /api/ {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+In this setup, use relative URL:
+```typescript
+baseURL: '/api/v1'  // No CORS needed
+```
+
+**Option 2: Separate Domains**
+
+Frontend: `https://app.yourdomain.com`
+Backend: `https://api.yourdomain.com`
+
+Configure API URL:
+```typescript
+baseURL: 'https://api.yourdomain.com/api/v1'
+```
+
+**Important:** Backend must allow CORS from frontend domain.
+
+**Option 3: Environment-Based Configuration**
+
+```typescript
+const getApiUrl = () => {
+  if (import.meta.env.DEV) {
+    return '/api/v1';  // Development proxy
+  }
+  return import.meta.env.VITE_API_URL || '/api/v1';  // Production
+};
+
+const api = axios.create({
+  baseURL: getApiUrl(),
+});
+```
+
+### Build Configuration
+
+#### TypeScript Configuration
+
+File: `frontend/tsconfig.json`
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+```
+
+#### Package.json Scripts
+
+File: `frontend/package.json`
+
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx",
+    "type-check": "tsc --noEmit"
+  }
+}
+```
+
+**Script descriptions:**
+- `npm run dev` - Start development server with HMR
+- `npm run build` - Type check + production build
+- `npm run preview` - Preview production build locally
+- `npm run lint` - Run ESLint for code quality
+- `npm run type-check` - TypeScript type checking without building
+
+#### Build Optimization
+
+**Code Splitting:**
+
+```typescript
+// Lazy load routes for better initial load time
+import { lazy, Suspense } from 'react';
+
+const HomePage = lazy(() => import('./pages/HomePage'));
+const ServicesPage = lazy(() => import('./pages/ServicesPage'));
+
+function App() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/services" element={<ServicesPage />} />
+      </Routes>
+    </Suspense>
+  );
+}
+```
+
+**Asset Optimization:**
+
+```typescript
+// vite.config.ts
+export default defineConfig({
+  build: {
+    // Image optimization
+    assetsInlineLimit: 4096,  // Inline assets < 4KB as base64
+
+    // CSS code splitting
+    cssCodeSplit: true,
+
+    // Rollup options
+    rollupOptions: {
+      output: {
+        // Separate chunks for better caching
+        assetFileNames: 'assets/[name]-[hash][extname]',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+      },
+    },
+  },
+})
+```
+
+### Runtime Configuration
+
+Unlike backend configuration, frontend environment variables are embedded at build time. For runtime configuration:
+
+#### Option 1: API Endpoint Discovery
+
+Fetch configuration from backend on app load:
+
+```typescript
+// src/config.ts
+interface AppConfig {
+  apiUrl: string;
+  features: {
+    oauth: boolean;
+    // ... other feature flags
+  };
+}
+
+export async function loadConfig(): Promise<AppConfig> {
+  // For static builds, use embedded env vars
+  if (import.meta.env.VITE_API_URL) {
+    return {
+      apiUrl: import.meta.env.VITE_API_URL,
+      features: { oauth: true },
+    };
+  }
+
+  // Or fetch from backend
+  const response = await fetch('/api/v1/config');
+  return response.json();
+}
+```
+
+#### Option 2: Build-Time Configuration Per Environment
+
+Create multiple build commands:
+
+```json
+{
+  "scripts": {
+    "build:dev": "vite build --mode development",
+    "build:staging": "vite build --mode staging",
+    "build:prod": "vite build --mode production"
+  }
+}
+```
+
+With corresponding `.env` files:
+- `.env.development`
+- `.env.staging`
+- `.env.production`
+
+#### Option 3: Configuration File
+
+Create `public/config.js` that's loaded at runtime:
+
+```javascript
+// public/config.js (not bundled)
+window.APP_CONFIG = {
+  apiUrl: 'https://api.yourdomain.com/api/v1',
+  environment: 'production',
+};
+```
+
+Load in `index.html`:
+```html
+<script src="/config.js"></script>
+```
+
+Access in app:
+```typescript
+const apiUrl = (window as any).APP_CONFIG?.apiUrl || '/api/v1';
+```
+
+### Frontend Environment Checklist
+
+Before deploying frontend to production:
+
+- [ ] Set correct `VITE_API_URL` for your environment
+- [ ] Verify API URL is reachable from frontend
+- [ ] Configure CORS in backend for frontend domain
+- [ ] Test OAuth flow with production redirect URLs
+- [ ] Enable production build optimizations
+- [ ] Disable source maps in production (or secure them)
+- [ ] Configure CDN for static assets (optional)
+- [ ] Set up HTTPS/SSL certificate
+- [ ] Configure SPA routing (try_files in Nginx)
+- [ ] Test build locally: `npm run build && npm run preview`
+- [ ] Verify all environment-specific features work
 
 ## Security Best Practices
 
