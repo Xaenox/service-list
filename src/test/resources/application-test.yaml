@@ -1,0 +1,29 @@
+ktor:
+  deployment:
+    port: 8080
+  application:
+    modules:
+      - club.vas3k.services.ApplicationKt.module
+
+jwt:
+  secret: test-secret-key-for-testing-only-at-least-256-bits-long
+  issuer: "http://localhost:8080/"
+  audience: "http://localhost:8080/api"
+  realm: "vas3k-services"
+  expirationMinutes: 60
+
+oauth:
+  vas3k:
+    clientId: test-client-id
+    clientSecret: test-client-secret
+    authorizeUrl: https://vas3k.club/auth/authorize/
+    accessTokenUrl: https://vas3k.club/auth/token/
+    userInfoUrl: https://vas3k.club/auth/me/
+    redirectUrl: http://localhost:8080/auth/callback
+
+database:
+  url: "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"
+  driver: "org.h2.Driver"
+  user: "sa"
+  password: ""
+  maxPoolSize: 5
