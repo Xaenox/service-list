@@ -1,0 +1,30 @@
+ktor:
+  deployment:
+    port: 8080
+    host: 0.0.0.0
+  application:
+    modules:
+      - club.vas3k.services.ApplicationKt.module
+
+database:
+  url: "jdbc:postgresql://localhost:5432/community_services"
+  driver: "org.postgresql.Driver"
+  user: "postgres"
+  password: "postgres"
+  maxPoolSize: 10
+
+oauth:
+  vas3k:
+    clientId: ${VAS3K_CLIENT_ID}
+    clientSecret: ${VAS3K_CLIENT_SECRET}
+    authorizeUrl: "https://vas3k.club/auth/o/authorize/"
+    accessTokenUrl: "https://vas3k.club/auth/o/token/"
+    userInfoUrl: "https://vas3k.club/auth/o/userinfo/"
+    redirectUrl: ${OAUTH_REDIRECT_URL}
+
+jwt:
+  secret: ${JWT_SECRET}
+  issuer: "community-services"
+  audience: "community-services-api"
+  realm: "Community Services"
+  expirationDays: 30
