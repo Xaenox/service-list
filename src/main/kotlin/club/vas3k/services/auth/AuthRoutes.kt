@@ -4,8 +4,10 @@ import club.vas3k.services.domain.User
 import club.vas3k.services.domain.toProfileResponse
 import club.vas3k.services.repository.UserRepository
 import io.ktor.http.*
+import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*

@@ -139,10 +139,11 @@ class CategoryRepositoryTest {
 
         val roots = repository.findRootCategories()
 
-        assertEquals(2, roots.size)
+        assertEquals(3, roots.size)
         assertTrue(roots.all { it.parentId == null })
         assertEquals("Parent", roots[0].name)
         assertEquals("Root1", roots[1].name)
+        assertEquals("Root2", roots[2].name)
     }
 
     @Test

@@ -7,6 +7,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import java.util.UUID
 
 class ServiceRepository(
@@ -37,7 +38,7 @@ class ServiceRepository(
 
         val services = query
             .orderBy(Services.createdAt to SortOrder.DESC)
-            .limit(pageSize).offset(((page - 1) * pageSize).toLong())
+            .limit(pageSize, ((page - 1) * pageSize).toLong())
             .map { it.toService() }
 
         val servicesWithDetails = services.mapNotNull { service ->
@@ -56,7 +57,7 @@ class ServiceRepository(
 
         val services = query
             .orderBy(Services.createdAt to SortOrder.DESC)
-            .limit(pageSize).offset(((page - 1) * pageSize).toLong())
+            .limit(pageSize, ((page - 1) * pageSize).toLong())
             .map { it.toService() }
 
         val owner = userRepository.findById(ownerId)
@@ -203,8 +204,10 @@ class ServiceRepository(
 
         filter.query?.let { q ->
             conditions.add(
-                (Services.title.lowerCase() like "%${q.lowercase()}%") or
-                        (Services.description.lowerCase() like "%${q.lowercase()}%")
+                with(SqlExpressionBuilder) {
+                    (Services.title.lowerCase() like "%${q.lowercase()}%") or
+                            (Services.description.lowerCase() like "%${q.lowercase()}%")
+                }
             )
         }
 
@@ -222,9 +225,9 @@ class ServiceRepository(
 
         filter.hasBonus?.let { has ->
             if (has) {
-                conditions.add(Services.bonusJson.isNotNull())
+                conditions.add(with(SqlExpressionBuilder) { Services.bonusJson.isNotNull() })
             } else {
-                conditions.add(Services.bonusJson.isNull())
+                conditions.add(with(SqlExpressionBuilder) { Services.bonusJson.isNull() })
             }
         }
 

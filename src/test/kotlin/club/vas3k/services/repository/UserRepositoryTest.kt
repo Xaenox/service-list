@@ -258,7 +258,7 @@ class UserRepositoryTest {
 
         repository.updateRole(original.id, UserRole.ADMIN)
 
-        val updated = repository.upsertFromOAuth(
+        repository.upsertFromOAuth(
             slug = "oauth-role",
             email = "updated@example.com",
             fullName = "Updated User",

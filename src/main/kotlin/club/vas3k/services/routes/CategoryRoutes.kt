@@ -4,6 +4,7 @@ import club.vas3k.services.auth.ErrorResponse
 import club.vas3k.services.domain.*
 import club.vas3k.services.repository.CategoryRepository
 import io.ktor.http.*
+import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*

@@ -65,7 +65,9 @@ dependencies {
     // Testing
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
-    testImplementation("io.insert-koin:koin-test:$koinVersion")
+    testImplementation("io.insert-koin:koin-test:$koinVersion") {
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-test-junit")
+    }
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("com.h2database:h2:2.2.224")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")

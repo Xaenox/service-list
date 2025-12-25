@@ -26,5 +26,8 @@ fun Application.module() {
     configureAuth()
     configureRouting()
 
-    log.info("Community Services API started on port ${environment.config.property("ktor.deployment.port").getString()}")
+    val port = runCatching {
+        environment.config.property("ktor.deployment.port").getString()
+    }.getOrElse { "unknown" }
+    log.info("Community Services API started on port $port")
 }

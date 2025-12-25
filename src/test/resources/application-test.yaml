@@ -10,7 +10,7 @@ jwt:
   issuer: "http://localhost:8080/"
   audience: "http://localhost:8080/api"
   realm: "vas3k-services"
-  expirationMinutes: 60
+  expirationDays: 30
 
 oauth:
   vas3k:
