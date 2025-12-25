@@ -6,10 +6,17 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.server.config.*
 import io.ktor.server.testing.*
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.koin.core.context.stopKoin
 import kotlin.test.assertEquals
 
 class ApplicationTest {
+
+    @AfterEach
+    fun tearDown() {
+        stopKoin()
+    }
 
     private fun createTestConfig() = MapApplicationConfig().apply {
         // Ktor settings
