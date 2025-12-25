@@ -1,0 +1,4 @@
+# Python зависимости для автоматического code review с Claude в GitHub
+anthropic>=0.40.0
+PyGithub>=2.1.1
+requests>=2.31.0

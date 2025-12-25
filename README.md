@@ -45,6 +45,34 @@ See [frontend/README.md](frontend/README.md) for detailed frontend documentation
 - Client-side routing with React Router
 - API integration with Axios
 
+### CI/CD & Automation
+- GitHub Actions for continuous integration
+- **🤖 Automated Code Review**: Claude AI integration for pull requests
+- Automated testing and building
+- Code quality checks with ktlint
+- Security scanning
+
+## 🤖 Automated Code Review with Claude
+
+This repository is configured for **automatic AI-powered code review** on GitHub pull requests using Claude from Anthropic.
+
+### Quick Setup
+
+1. **Get Anthropic API Key**: Register at [console.anthropic.com](https://console.anthropic.com/)
+2. **Add GitHub Secret** (Settings → Secrets and variables → Actions):
+   - `ANTHROPIC_API_KEY` - Your Anthropic API key
+3. **Create a Pull Request** - Claude will automatically review your code!
+
+### What Claude Reviews
+
+- 🔴 **Critical Issues**: Security vulnerabilities, bugs, breaking changes
+- 🟡 **Important Notes**: Code quality, best practices, performance
+- 🔵 **Improvements**: Refactoring suggestions, documentation
+
+### Full Documentation
+
+See [.github/CLAUDE_CODE_REVIEW.md](.github/CLAUDE_CODE_REVIEW.md) for complete setup guide, configuration options, troubleshooting, and best practices.
+
 ## Tech Stack
 
 ### Backend
