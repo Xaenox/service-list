@@ -164,6 +164,7 @@ class ServiceRepositoryTest {
         )
 
         assertEquals(1, services.size)
+        assertEquals(1, total)
         assertEquals("NY Service", services[0].service.title)
     }
 
@@ -181,6 +182,7 @@ class ServiceRepositoryTest {
         )
 
         assertEquals(1, servicesWithBonus.size)
+        assertEquals(1, totalWithBonus)
         assertEquals("With Bonus", servicesWithBonus[0].service.title)
 
         val (servicesWithoutBonus, totalWithoutBonus) = serviceRepository.findAll(
@@ -190,6 +192,7 @@ class ServiceRepositoryTest {
         )
 
         assertEquals(1, servicesWithoutBonus.size)
+        assertEquals(1, totalWithoutBonus)
         assertEquals("Without Bonus", servicesWithoutBonus[0].service.title)
     }
 
@@ -209,6 +212,7 @@ class ServiceRepositoryTest {
         )
 
         assertEquals(1, services.size)
+        assertEquals(1, total)
         assertEquals("Tech Service", services[0].service.title)
     }
 
