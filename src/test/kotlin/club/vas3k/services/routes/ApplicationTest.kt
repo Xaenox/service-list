@@ -56,13 +56,14 @@ class ApplicationTest {
 
         val response = client.get("/health")
         assertEquals(HttpStatusCode.OK, response.status)
+        val actualBody = response.bodyAsText()
         val expectedJson = """
-            {
-              "status": "ok",
-              "version": "1.0.0"
-            }
-        """.trimIndent()
-        assertEquals(expectedJson, response.bodyAsText())
+{
+    "status": "ok",
+    "version": "1.0.0"
+}
+""".trimIndent()
+        assertEquals(expectedJson, actualBody)
     }
 
     @Test
