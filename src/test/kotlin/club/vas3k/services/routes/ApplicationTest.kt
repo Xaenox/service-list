@@ -56,7 +56,7 @@ class ApplicationTest {
 
         val response = client.get("/health")
         assertEquals(HttpStatusCode.OK, response.status)
-        assertEquals("{\"status\":\"ok\"}", response.bodyAsText())
+        assertEquals("{\"status\":\"ok\",\"version\":\"1.0.0\"}", response.bodyAsText())
     }
 
     @Test
