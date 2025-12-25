@@ -47,22 +47,21 @@ See [frontend/README.md](frontend/README.md) for detailed frontend documentation
 
 ### CI/CD & Automation
 - GitHub Actions for continuous integration
-- GitLab CI/CD with automated code review
-- **🤖 Automated Code Review**: Claude AI integration for merge requests (GitLab)
+- **🤖 Automated Code Review**: Claude AI integration for pull requests
 - Automated testing and building
 - Code quality checks with ktlint
+- Security scanning
 
-## 🤖 Automated Code Review with Claude (GitLab)
+## 🤖 Automated Code Review with Claude
 
-This repository is configured for **automatic AI-powered code review** on GitLab merge requests using Claude from Anthropic.
+This repository is configured for **automatic AI-powered code review** on GitHub pull requests using Claude from Anthropic.
 
 ### Quick Setup
 
 1. **Get Anthropic API Key**: Register at [console.anthropic.com](https://console.anthropic.com/)
-2. **Add GitLab Variables** (Settings → CI/CD → Variables):
+2. **Add GitHub Secret** (Settings → Secrets and variables → Actions):
    - `ANTHROPIC_API_KEY` - Your Anthropic API key
-   - `GITLAB_TOKEN` - GitLab token with `api` scope
-3. **Create a Merge Request** - Claude will automatically review your code!
+3. **Create a Pull Request** - Claude will automatically review your code!
 
 ### What Claude Reviews
 
@@ -72,7 +71,7 @@ This repository is configured for **automatic AI-powered code review** on GitLab
 
 ### Full Documentation
 
-See [.gitlab/CLAUDE_CODE_REVIEW.md](.gitlab/CLAUDE_CODE_REVIEW.md) for complete setup guide, configuration options, troubleshooting, and best practices.
+See [.github/CLAUDE_CODE_REVIEW.md](.github/CLAUDE_CODE_REVIEW.md) for complete setup guide, configuration options, troubleshooting, and best practices.
 
 ## Tech Stack
 
