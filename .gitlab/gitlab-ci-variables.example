@@ -1,0 +1,123 @@
+# Пример переменных окружения для GitLab CI/CD
+#
+# Эти переменные нужно добавить в Settings → CI/CD → Variables
+# НЕ коммитьте этот файл с реальными значениями!
+
+# ============================================================
+# ОБЯЗАТЕЛЬНЫЕ ПЕРЕМЕННЫЕ ДЛЯ CLAUDE CODE REVIEW
+# ============================================================
+
+# Anthropic API ключ
+# Получите на: https://console.anthropic.com/
+# Настройки: Protected ✅, Masked ✅
+ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# GitLab Access Token
+# Создайте в: Settings → Access Tokens
+# Права: api, write_repository
+# Настройки: Protected ✅, Masked ✅
+GITLAB_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx
+
+# ============================================================
+# ОПЦИОНАЛЬНЫЕ ПЕРЕМЕННЫЕ
+# ============================================================
+
+# Модель Claude (по умолчанию: claude-sonnet-4-20250514)
+# Варианты:
+#   - claude-opus-4-20250514 (самая мощная, дорогая)
+#   - claude-sonnet-4-20250514 (баланс качества/цены) ← рекомендуется
+#   - claude-haiku-3-5-20250514 (быстрая, экономичная)
+# Настройки: Protected ❌, Masked ❌
+CLAUDE_MODEL=claude-sonnet-4-20250514
+
+# ============================================================
+# ИНСТРУКЦИИ ПО ДОБАВЛЕНИЮ В GITLAB
+# ============================================================
+
+# 1. Откройте ваш проект в GitLab
+#
+# 2. Перейдите: Settings → CI/CD → Variables
+#
+# 3. Нажмите "Add variable"
+#
+# 4. Для ANTHROPIC_API_KEY:
+#    - Key: ANTHROPIC_API_KEY
+#    - Value: ваш API ключ (начинается с sk-ant-)
+#    - Type: Variable
+#    - Flags: ✅ Protected, ✅ Masked, ❌ Expanded
+#    - Environments: All (default)
+#
+# 5. Для GITLAB_TOKEN:
+#    - Key: GITLAB_TOKEN
+#    - Value: ваш GitLab token (начинается с glpat-)
+#    - Type: Variable
+#    - Flags: ✅ Protected, ✅ Masked, ❌ Expanded
+#    - Environments: All (default)
+#
+# 6. (Опционально) Для CLAUDE_MODEL:
+#    - Key: CLAUDE_MODEL
+#    - Value: claude-sonnet-4-20250514
+#    - Type: Variable
+#    - Flags: ❌ Protected, ❌ Masked, ❌ Expanded
+#    - Environments: All (default)
+
+# ============================================================
+# ПРОВЕРКА НАСТРОЙКИ
+# ============================================================
+
+# После добавления переменных:
+#
+# 1. Создайте тестовую ветку:
+#    git checkout -b test/claude-review
+#
+# 2. Внесите небольшое изменение в код
+#
+# 3. Создайте commit и push:
+#    git add .
+#    git commit -m "test: check Claude code review"
+#    git push origin test/claude-review
+#
+# 4. Создайте Merge Request в GitLab UI
+#
+# 5. Дождитесь завершения pipeline
+#
+# 6. Claude должен добавить комментарий с code review!
+
+# ============================================================
+# БЕЗОПАСНОСТЬ
+# ============================================================
+
+# ⚠️  ВАЖНО:
+# - Никогда не коммитьте API ключи в репозиторий
+# - Всегда используйте GitLab CI/CD Variables для секретов
+# - Включайте флаги Protected и Masked для API ключей
+# - Регулярно ротируйте токены
+# - Используйте минимально необходимые права для токенов
+
+# ============================================================
+# TROUBLESHOOTING
+# ============================================================
+
+# Если переменные не работают:
+#
+# 1. Проверьте, что переменные добавлены в правильный проект
+#
+# 2. Убедитесь, что Protected переменные не используются
+#    только для protected branches, если ваш MR из обычной ветки
+#
+# 3. Проверьте логи pipeline: CI/CD → Pipelines → [job] → Logs
+#
+# 4. Для отладки временно добавьте в .gitlab-ci.yml:
+#    script:
+#      - echo "ANTHROPIC_API_KEY is set: $([ -z "$ANTHROPIC_API_KEY" ] && echo 'NO' || echo 'YES')"
+#      - echo "GITLAB_TOKEN is set: $([ -z "$GITLAB_TOKEN" ] && echo 'NO' || echo 'YES')"
+#    НЕ выводите сами значения секретов!
+
+# ============================================================
+# ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ
+# ============================================================
+
+# Документация:
+# - Claude Code Review: .gitlab/CLAUDE_CODE_REVIEW.md
+# - GitLab Variables: https://docs.gitlab.com/ee/ci/variables/
+# - Anthropic API: https://docs.anthropic.com/

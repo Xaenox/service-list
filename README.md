@@ -45,6 +45,35 @@ See [frontend/README.md](frontend/README.md) for detailed frontend documentation
 - Client-side routing with React Router
 - API integration with Axios
 
+### CI/CD & Automation
+- GitHub Actions for continuous integration
+- GitLab CI/CD with automated code review
+- **🤖 Automated Code Review**: Claude AI integration for merge requests (GitLab)
+- Automated testing and building
+- Code quality checks with ktlint
+
+## 🤖 Automated Code Review with Claude (GitLab)
+
+This repository is configured for **automatic AI-powered code review** on GitLab merge requests using Claude from Anthropic.
+
+### Quick Setup
+
+1. **Get Anthropic API Key**: Register at [console.anthropic.com](https://console.anthropic.com/)
+2. **Add GitLab Variables** (Settings → CI/CD → Variables):
+   - `ANTHROPIC_API_KEY` - Your Anthropic API key
+   - `GITLAB_TOKEN` - GitLab token with `api` scope
+3. **Create a Merge Request** - Claude will automatically review your code!
+
+### What Claude Reviews
+
+- 🔴 **Critical Issues**: Security vulnerabilities, bugs, breaking changes
+- 🟡 **Important Notes**: Code quality, best practices, performance
+- 🔵 **Improvements**: Refactoring suggestions, documentation
+
+### Full Documentation
+
+See [.gitlab/CLAUDE_CODE_REVIEW.md](.gitlab/CLAUDE_CODE_REVIEW.md) for complete setup guide, configuration options, troubleshooting, and best practices.
+
 ## Tech Stack
 
 ### Backend
