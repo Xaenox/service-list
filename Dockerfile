@@ -4,7 +4,7 @@ COPY build.gradle.kts settings.gradle.kts gradle.properties ./
 COPY src ./src
 RUN gradle build --no-daemon -x test
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /app/build/libs/*-all.jar app.jar
 EXPOSE 8080
